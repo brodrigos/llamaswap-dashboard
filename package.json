@@ -1,0 +1,14 @@
+{
+  "name": "llamaswap-dashboard",
+  "version": "1.0.0",
+  "description": "LlamaSwap Dashboard - Monitoramento de modelos em tempo real",
+  "type": "module",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node server.js --no-open"
+  },
+  "keywords": ["llama", "dashboard", "monitor", "gpu"],
+  "author": "brodrigos",
+  "license": "MIT"
+}

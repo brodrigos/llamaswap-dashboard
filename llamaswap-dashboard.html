@@ -1,0 +1,560 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>LlamaSwap Dashboard</title>
+<style>
+/* ─── Reset & Base ─── */
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#0d1117;--surface:#161b22;--border:#30363d;
+  --text:#e6edf3;--text-secondary:#8b949e;
+  --green:#3fb950;--red:#f85149;--yellow:#d29922;--blue:#58a6ff;--purple:#bc8cff;
+  --radius:8px;--shadow:0 2px 8px rgba(0,0,0,.4);
+}
+body{font-family:'Segoe UI',system-ui,-apple-system,sans-serif;background:var(--bg);color:var(--text);min-height:100vh;padding:0}
+h1,h2,h3,h4{font-weight:600}
+
+/* ─── Header ─── */
+.header{background:var(--surface);border-bottom:1px solid var(--border);padding:16px 24px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100}
+.header h1{display:flex;align-items:center;gap:10px;font-size:1.4rem}
+.header h1 span.icon{font-size:1.6rem}
+.header .status-badge{padding:6px 14px;border-radius:20px;font-size:.8rem;font-weight:600}
+.status-badge.live{background:rgba(63,185,80,.15);color:var(--green);border:1px solid rgba(63,185,80,.3)}
+.status-badge.offline{background:rgba(248,81,73,.15);color:var(--red);border:1px solid rgba(248,81,73,.3)}
+
+/* ─── Layout ─── */
+.main{max-width:1400px;margin:0 auto;padding:24px;display:grid;gap:20px}
+
+/* ─── Cards ─── */
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow);overflow:hidden}
+.card-header{background:rgba(48,54,61,.4);padding:12px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
+.card-header h2{font-size:1rem;display:flex;align-items:center;gap:8px}
+.card-body{padding:16px}
+
+/* ─── Grid layouts ─── */
+.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:20px}
+.grid-3{display:grid;grid-template-columns:repeat(3,1fr);gap:20px}
+.grid-4{display:grid;grid-template-columns:repeat(4,1fr);gap:16px}
+@media(max-width:900px){.grid-2,.grid-3,.grid-4{grid-template-columns:1fr}}
+
+/* ─── Model cards ─── */
+.model-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:14px 16px;display:flex;align-items:center;justify-content:space-between;transition:all .2s}
+.model-card:hover{border-color:var(--blue)}
+.model-card.loaded{border-left:3px solid var(--green)}
+.model-card.unloaded{border-left:3px solid var(--text-secondary)}
+.model-name{font-weight:600;font-size:.9rem}
+.model-meta{font-size:.75rem;color:var(--text-secondary);margin-top:4px}
+.status-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0}
+.status-dot.green{background:var(--green);box-shadow:0 0 6px var(--green)}
+.status-dot.red{background:var(--red)}
+
+/* ─── GPU Metrics ─── */
+.gpu-stat{text-align:center;padding:16px}
+.gpu-stat .value{font-size:2rem;font-weight:700;line-height:1.2}
+.gpu-stat .label{font-size:.75rem;color:var(--text-secondary);margin-top:4px;text-transform:uppercase;letter-spacing:.5px}
+.gpu-stat .unit{font-size:1rem;color:var(--text-secondary)}
+.gpu-stat.warning .value{color:var(--yellow)}
+.gpu-stat.danger .value{color:var(--red)}
+
+/* ─── Progress bar ─── */
+.bar{height:8px;background:var(--border);border-radius:4px;overflow:hidden;margin-top:8px}
+.bar-fill{height:100%;border-radius:4px;transition:width .5s ease}
+.bar-fill.green{background:linear-gradient(90deg,#238636,var(--green))}
+.bar-fill.red{background:linear-gradient(90deg,#da3633,var(--red))}
+.bar-fill.blue{background:linear-gradient(90deg,#1f6feb,var(--blue))}
+.bar-fill.yellow{background:linear-gradient(90deg,#9e6a03,var(--yellow))}
+
+/* ─── Logs ─── */
+.log-container{max-height:300px;overflow-y:auto;font-family:'Cascadia Code','Fira Code',monospace;font-size:.8rem;line-height:1.6}
+.log-entry{padding:4px 8px;border-radius:4px;margin-bottom:2px;display:flex;gap:8px}
+.log-entry:hover{background:rgba(48,54,61,.3)}
+.log-time{color:var(--text-secondary);flex-shrink:0}
+.log-level{font-weight:600;flex-shrink:0;width:50px}
+.log-level.info{color:var(--blue)}
+.log-level.warn{color:var(--yellow)}
+.log-level.error{color:var(--red)}
+.log-level.debug{color:var(--purple)}
+.log-msg{color:var(--text);word-break:break-all}
+
+/* ─── Refresh indicator ─── */
+.refresh-bar{position:fixed;top:0;left:0;height:3px;background:var(--blue);z-index:999;transition:width linear}
+.refresh-bar.animating{width:100%;transition-duration:3s}
+
+/* ─── Buttons ─── */
+.btn{padding:8px 16px;border-radius:var(--radius);border:1px solid var(--border);background:var(--surface);color:var(--text);cursor:pointer;font-size:.85rem;display:inline-flex;align-items:center;gap:6px;transition:all .15s}
+.btn:hover{background:var(--border)}
+.btn-primary{background:var(--blue);border-color:var(--blue);color:#fff}
+.btn-primary:hover{background:#79c0ff}
+.btn-danger{background:var(--red);border-color:var(--red);color:#fff}
+
+/* ─── Summary row ─── */
+.summary{display:flex;gap:16px;flex-wrap:wrap;margin-bottom:8px}
+.summary-item{padding:8px 14px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);font-size:.85rem}
+.summary-item strong{color:var(--blue)}
+
+/* ─── Scrollbar ─── */
+::-webkit-scrollbar{width:6px}
+::-webkit-scrollbar-track{background:var(--surface)}
+::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px}
+::-webkit-scrollbar-thumb:hover{background:var(--text-secondary)}
+
+/* ─── Loading ─── */
+.loading{text-align:center;padding:40px;color:var(--text-secondary)}
+.loading .spinner{display:inline-block;width:32px;height:32px;border:3px solid var(--border);border-top-color:var(--blue);border-radius:50%;animation:spin .8s linear infinite;margin-bottom:12px}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* ─── Empty state ─── */
+.empty{text-align:center;padding:32px;color:var(--text-secondary)}
+.empty .icon{font-size:2.5rem;margin-bottom:8px}
+
+/* ─── Tabs ─── */
+.tabs{display:flex;gap:0;border-bottom:1px solid var(--border);padding:0 16px}
+.tab{padding:10px 16px;cursor:pointer;color:var(--text-secondary);border-bottom:2px solid transparent;transition:all .15s;font-size:.85rem}
+.tab:hover{color:var(--text)}
+.tab.active{color:var(--blue);border-bottom-color:var(--blue)}
+.tab-content{display:none}
+.tab-content.active{display:block}
+
+/* ─── Toggle switch ─── */
+.toggle{display:flex;align-items:center;gap:8px;font-size:.85rem;cursor:pointer}
+.toggle input{accent-color:var(--blue)}
+</style>
+</head>
+<body>
+
+<!-- Refresh progress bar -->
+<div class="refresh-bar" id="refreshBar"></div>
+
+<!-- Header -->
+<div class="header">
+  <h1><span class="icon">🦙</span> LlamaSwap Dashboard</h1>
+  <div style="display:flex;align-items:center;gap:12px">
+    <span class="status-badge live" id="connStatus">⏳ Conectando...</span>
+    <span style="font-size:.8rem;color:var(--text-secondary)" id="clock"></span>
+    <button class="btn" onclick="refreshAll()" title="Atualizar agora">🔄</button>
+  </div>
+</div>
+
+<!-- Summary -->
+<div class="main">
+  <div class="grid-4" id="summaryRow">
+    <div class="card" style="text-align:center;padding:12px">
+      <div style="font-size:.75rem;color:var(--text-secondary);text-transform:uppercase;letter-spacing:.5px">Modelos</div>
+      <div style="font-size:1.5rem;font-weight:700;margin-top:4px" id="totalModels">-</div>
+    </div>
+    <div class="card" style="text-align:center;padding:12px">
+      <div style="font-size:.75rem;color:var(--text-secondary);text-transform:uppercase;letter-spacing:.5px">Carregados</div>
+      <div style="font-size:1.5rem;font-weight:700;color:var(--green);margin-top:4px" id="loadedModels">-</div>
+    </div>
+    <div class="card" style="text-align:center;padding:12px">
+      <div style="font-size:.75rem;color:var(--text-secondary);text-transform:uppercase;letter-spacing:.5px">Descarregados</div>
+      <div style="font-size:1.5rem;font-weight:700;color:var(--red);margin-top:4px" id="unloadedModels">-</div>
+    </div>
+    <div class="card" style="text-align:center;padding:12px">
+      <div style="font-size:.75rem;color:var(--text-secondary);text-transform:uppercase;letter-spacing:.5px">Última atualização</div>
+      <div style="font-size:.9rem;font-weight:600;margin-top:4px" id="lastUpdate">-</div>
+    </div>
+  </div>
+
+  <!-- GPU Monitor -->
+  <div class="card">
+    <div class="card-header">
+      <h2>🖥️ GPU Monitor</h2>
+      <span style="font-size:.75rem;color:var(--text-secondary)" id="gpuName">-</span>
+    </div>
+    <div class="card-body">
+      <div class="grid-4">
+        <div class="gpu-stat">
+          <div class="value" id="gpuVRAM">-</div>
+          <div class="label">VRAM Usada</div>
+          <div class="bar"><div class="bar-fill blue" id="vramBar" style="width:0%"></div></div>
+        </div>
+        <div class="gpu-stat">
+          <div class="value" id="gpuTemp">-</div>
+          <div class="label">Temperatura</div>
+          <div class="bar"><div class="bar-fill green" id="tempBar" style="width:0%"></div></div>
+        </div>
+        <div class="gpu-stat">
+          <div class="value" id="gpuFan">-</div>
+          <div class="label">Ventoinha</div>
+          <div class="bar"><div class="bar-fill green" id="fanBar" style="width:0%"></div></div>
+        </div>
+        <div class="gpu-stat">
+          <div class="value" id="gpuUtil">-</div>
+          <div class="label">Utilização</div>
+          <div class="bar"><div class="bar-fill blue" id="utilBar" style="width:0%"></div></div>
+        </div>
+      </div>
+      <div class="grid-3" style="margin-top:16px">
+        <div class="gpu-stat">
+          <div class="value" id="gpuPower">-</div>
+          <div class="label">Power Draw</div>
+        </div>
+        <div class="gpu-stat">
+          <div class="value" id="systemRAM">-</div>
+          <div class="label">RAM do Sistema</div>
+          <div class="bar"><div class="bar-fill blue" id="ramBar" style="width:0%"></div></div>
+        </div>
+        <div class="gpu-stat">
+          <div class="value" id="cpuUsage">-</div>
+          <div class="label">CPU Avg</div>
+          <div class="bar"><div class="bar-fill green" id="cpuBar" style="width:0%"></div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Tabs: Models + Logs -->
+  <div>
+    <div class="tabs">
+      <div class="tab active" onclick="switchTab('models')">📋 Modelos</div>
+      <div class="tab" onclick="switchTab('logs')">📝 Logs</div>
+    </div>
+    <div class="tab-content active" id="tab-models">
+      <div class="card" style="margin-top:0">
+        <div class="card-header">
+          <h2>📋 Status dos Modelos</h2>
+          <div style="display:flex;gap:8px">
+            <label class="toggle">
+              <input type="checkbox" id="autoRefresh" checked> Auto-refresh
+            </label>
+          </div>
+        </div>
+        <div class="card-body">
+          <div id="modelsList">
+            <div class="loading"><div class="spinner"></div><br>Carregando modelos...</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="tab-content" id="tab-logs">
+      <div class="card" style="margin-top:0">
+        <div class="card-header">
+          <h2>📝 Logs do Serviço</h2>
+          <button class="btn" onclick="clearLogs()">🗑️ Limpar</button>
+        </div>
+        <div class="card-body">
+          <div class="log-container" id="logContainer">
+            <div class="empty"><div class="icon">📝</div><div>Aguardando logs...</div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ─── Configuration ───
+const CONFIG = {
+  baseUrl: 'http://192.168.1.114:8080',
+  apiKey: 'turboquant-api-2026',
+  refreshInterval: 1000, // ms
+};
+
+const HEADERS = {
+  'Authorization': `Bearer ${CONFIG.apiKey}`,
+  'Content-Type': 'application/json',
+};
+
+// ─── State ───
+let modelsCache = [];
+let gpuCache = {};
+let logEntries = [];
+let connected = false;
+
+// ─── Clock ───
+function updateClock() {
+  const now = new Date();
+  document.getElementById('clock').textContent = now.toLocaleString('pt-BR', {
+    hour: '2-digit', minute: '2-digit', second: '2-digit',
+    day: '2-digit', month: '2-digit', year: 'numeric'
+  });
+  document.getElementById('lastUpdate').textContent = now.toLocaleTimeString('pt-BR', {
+    hour: '2-digit', minute: '2-digit', second: '2-digit'
+  });
+}
+setInterval(updateClock, 1000);
+updateClock();
+
+// ─── Refresh progress bar ───
+function animateRefreshBar() {
+  const bar = document.getElementById('refreshBar');
+  bar.style.transition = 'none';
+  bar.style.width = '0%';
+  requestAnimationFrame(() => {
+    bar.style.transition = `width ${CONFIG.refreshInterval}ms linear`;
+    bar.style.width = '100%';
+  });
+  setTimeout(() => {
+    bar.style.transition = 'none';
+    bar.style.width = '0%';
+  }, CONFIG.refreshInterval);
+}
+
+// ─── Tab switching ───
+function switchTab(tabName) {
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+  document.querySelector(`.tab:nth-child(${tabName === 'models' ? 1 : 2})`).classList.add('active');
+  document.getElementById(`tab-${tabName}`).classList.add('active');
+}
+
+// ─── API calls ───
+async function fetchJSON(endpoint) {
+  try {
+    const res = await fetch(`${CONFIG.baseUrl}${endpoint}`, { headers: HEADERS });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    return await res.json();
+  } catch (err) {
+    console.error(`❌ Error fetching ${endpoint}:`, err.message);
+    throw err;
+  }
+}
+
+async function fetchRaw(endpoint) {
+  try {
+    const res = await fetch(`${CONFIG.baseUrl}${endpoint}`, { headers: HEADERS });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    return await res.text();
+  } catch (err) {
+    console.error(`❌ Error fetching ${endpoint}:`, err.message);
+    throw err;
+  }
+}
+
+// ─── GPU Metrics Parser ───
+function parseMetrics(text) {
+  const metrics = {};
+  const lines = text.split('\n');
+  for (const line of lines) {
+    const m = line.match(/^llamaswap_(\w+)\{(.+?)\}\s+([\d.]+)$/);
+    if (m) {
+      const [, name, labelStr, valueStr] = m;
+      const value = parseFloat(valueStr);
+      // Parse label like 'id="0",name="RTX 3070 Ti",uuid="GPU-xxx"'
+      const labelMatch = {};
+      const parts = labelStr.split(',');
+      for (const part of parts) {
+        const kv = part.trim().split('=');
+        if (kv.length === 2) {
+          labelMatch[kv[0].trim()] = kv[1].trim().replace(/"/g, '');
+        }
+      }
+      // Key: name with first label (id) for unique lookup
+      const labelKey = labelMatch.id !== undefined ? `id${labelMatch.id}` : '';
+      const key = labelKey ? `${name}_${labelKey}` : name;
+      metrics[key] = value;
+      // Also store raw data for GPU info
+      if (name === 'gpu_temperature_celsius') {
+        metrics._gpu_temperature = value;
+        metrics._gpu_name = labelMatch.name || '';
+      }
+      if (name === 'gpu_util_percent') {
+        metrics._gpu_util_percent = value;
+      }
+      if (name === 'gpu_memory_used_bytes') {
+        metrics._gpu_vram_used = value;
+      }
+      if (name === 'gpu_memory_total_bytes') {
+        metrics._gpu_vram_total = value;
+      }
+      if (name === 'gpu_fan_speed_percent') {
+        metrics._gpu_fan = value;
+      }
+      if (name === 'gpu_power_draw_watts') {
+        metrics._gpu_power = value;
+      }
+      if (name === 'gpu_memory_util_percent') {
+        metrics._gpu_vram_percent = value;
+      }
+      if (name === 'cpu_util_percent') {
+        if (!metrics._cpu_values) metrics._cpu_values = [];
+        metrics._cpu_values.push(value);
+      }
+    } else {
+      const simple = line.match(/^llamaswap_(\w+)\s+([\d.]+)$/);
+      if (simple) {
+        const [, name, valueStr] = simple;
+        metrics[name] = parseFloat(valueStr);
+      }
+    }
+  }
+  return metrics;
+}
+
+// ─── Render Models ───
+function renderModels(models) {
+  const container = document.getElementById('modelsList');
+  if (!models || models.length === 0) {
+    container.innerHTML = '<div class="empty"><div class="icon">📋</div><div>Nenhum modelo encontrado</div></div>';
+    return;
+  }
+
+  const loaded = models.filter(m => m.status?.value === 'loaded');
+  const unloaded = models.filter(m => m.status?.value === 'unloaded');
+
+  document.getElementById('totalModels').textContent = models.length;
+  document.getElementById('loadedModels').textContent = loaded.length;
+  document.getElementById('unloadedModels').textContent = unloaded.length;
+
+  let html = '<div style="display:grid;gap:8px">';
+
+  // Loaded first, then unloaded
+  const sorted = [...loaded, ...unloaded];
+  for (const model of sorted) {
+    const meta = model.meta?.llamaswap || {};
+    const icon = model.status?.value === 'loaded' ? '✅' : '⬜';
+    const cls = model.status?.value === 'loaded' ? 'loaded' : 'unloaded';
+
+    html += `
+      <div class="model-card ${cls}">
+        <div>
+          <div class="model-name">${icon} ${model.name || model.id}</div>
+          <div class="model-meta">ID: ${model.id} ${meta.type ? `• ${meta.type}` : ''}</div>
+        </div>
+        <div class="status-dot ${model.status?.value === 'loaded' ? 'green' : 'red'}"></div>
+      </div>`;
+  }
+
+  html += '</div>';
+  container.innerHTML = html;
+}
+
+// ─── Render GPU Metrics ───
+function renderGPU(m) {
+  if (!m || Object.keys(m).length === 0) return;
+
+  // GPU Name
+  if (m._gpu_name) document.getElementById('gpuName').textContent = m._gpu_name;
+
+  // VRAM
+  const vramUsed = m._gpu_vram_used || 0;
+  const vramTotal = m._gpu_vram_total || 1;
+  const vramPct = m._gpu_vram_percent || (vramUsed / vramTotal * 100);
+  document.getElementById('gpuVRAM').innerHTML = `${(vramUsed / 1e9).toFixed(1)}<span class="unit"> / ${vramTotal / 1e9 < 1 ? (vramTotal / 1e9).toFixed(1) : (vramTotal / 1e9).toFixed(0)} GB</span>`;
+  document.getElementById('vramBar').style.width = `${Math.min(100, vramPct)}%`;
+
+  // Temperature
+  const temp = m._gpu_temperature || 0;
+  document.getElementById('gpuTemp').innerHTML = `${temp}<span class="unit">°C</span>`;
+  document.getElementById('tempBar').style.width = `${Math.min(100, temp / 1.2)}%`;
+  const tempStat = document.getElementById('gpuTemp').parentElement;
+  tempStat.className = `gpu-stat ${temp > 85 ? 'danger' : temp > 70 ? 'warning' : ''}`;
+
+  // Fan speed
+  const fan = m._gpu_fan || 0;
+  document.getElementById('gpuFan').innerHTML = `${fan}<span class="unit">%</span>`;
+  document.getElementById('fanBar').style.width = `${fan}%`;
+
+  // GPU Utilization
+  const util = m._gpu_util_percent || 0;
+  document.getElementById('gpuUtil').innerHTML = `${util}<span class="unit">%</span>`;
+  document.getElementById('utilBar').style.width = `${util}%`;
+
+  // Power draw
+  const power = m._gpu_power || 0;
+  document.getElementById('gpuPower').innerHTML = `${power.toFixed(1)}<span class="unit"> W</span>`;
+
+  // System RAM (llamaswap_memory_*)
+  const sysRAMUsed = m.memory_used_bytes || 0;
+  const sysRAMTotal = m.memory_total_bytes || 1;
+  const sysPct = (sysRAMUsed / sysRAMTotal * 100).toFixed(1);
+  document.getElementById('systemRAM').innerHTML = `${(sysRAMUsed / 1e9).toFixed(1)}<span class="unit"> / ${sysRAMTotal / 1e9 < 1 ? (sysRAMTotal / 1e9).toFixed(1) : (sysRAMTotal / 1e9).toFixed(0)} GB</span>`;
+  document.getElementById('ramBar').style.width = `${sysPct}%`;
+
+  // CPU Average
+  if (m._cpu_values && m._cpu_values.length > 0) {
+    cpuAvg = (m._cpu_values.reduce((a, b) => a + b, 0) / m._cpu_values.length).toFixed(1);
+    document.getElementById('cpuUsage').innerHTML = `${cpuAvg}<span class="unit">%</span>`;
+    document.getElementById('cpuBar').style.width = `${cpuAvg}%`;
+  } else {
+    document.getElementById('cpuUsage').innerHTML = `—<span class="unit">%</span>`;
+    document.getElementById('cpuBar').style.width = `0%`;
+  }
+}
+
+// ─── Render Logs ───
+function renderLogs(entries) {
+  const container = document.getElementById('logContainer');
+  if (!entries || entries.length === 0) {
+    container.innerHTML = '<div class="empty"><div class="icon">📝</div><div>Aguardando logs...</div></div>';
+    return;
+  }
+
+  const recent = entries.slice(-50);
+  let html = '';
+  for (const entry of recent) {
+    const level = entry.level || 'info';
+    const time = new Date(entry.timestamp || Date.now()).toLocaleTimeString('pt-BR');
+    html += `
+      <div class="log-entry">
+        <span class="log-time">${time}</span>
+        <span class="log-level ${level}">${level.toUpperCase()}</span>
+        <span class="log-msg">${entry.message || entry.text || ''}</span>
+      </div>`;
+  }
+  container.innerHTML = html;
+  container.scrollTop = container.scrollHeight;
+}
+
+// ─── Main Refresh ───
+async function refreshAll() {
+  connected = false;
+  document.getElementById('connStatus').className = 'status-badge';
+  document.getElementById('connStatus').textContent = '⏳ Atualizando...';
+
+  try {
+    // Fetch models
+    try {
+      const models = await fetchJSON('/v1/models');
+      if (models && models.data) {
+        modelsCache = models.data;
+        renderModels(modelsCache);
+      }
+    } catch (e) {
+      console.warn('Models fetch failed:', e.message);
+      document.getElementById('modelsList').innerHTML = '<div class="empty"><div class="icon">⚠️</div><div>Erro ao carregar modelos</div></div>';
+    }
+
+    // Fetch GPU metrics
+    try {
+      const metricsRaw = await fetchRaw('/metrics');
+      gpuCache = parseMetrics(metricsRaw);
+      renderGPU(gpuCache);
+    } catch (e) {
+      console.warn('Metrics fetch failed:', e.message);
+    }
+
+    // Mark connected
+    connected = true;
+    document.getElementById('connStatus').className = 'status-badge live';
+    document.getElementById('connStatus').textContent = '● Conectado';
+
+  } catch (err) {
+    console.error('Refresh error:', err);
+    document.getElementById('connStatus').className = 'status-badge offline';
+    document.getElementById('connStatus').textContent = '● Desconectado';
+  }
+
+  updateClock();
+}
+
+function clearLogs() {
+  document.getElementById('logContainer').innerHTML = '<div class="empty"><div class="icon">📝</div><div>Logs limpos</div></div>';
+}
+
+// ─── Start ───
+refreshAll();
+animateRefreshBar();
+
+setInterval(() => {
+  if (document.getElementById('autoRefresh').checked) {
+    refreshAll();
+    animateRefreshBar();
+  }
+}, CONFIG.refreshInterval);
+</script>
+</body>
+</html>
