@@ -1,560 +1,807 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>LlamaSwap Dashboard</title>
-<style>
-/* ─── Reset & Base ─── */
-*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-:root{
-  --bg:#0d1117;--surface:#161b22;--border:#30363d;
-  --text:#e6edf3;--text-secondary:#8b949e;
-  --green:#3fb950;--red:#f85149;--yellow:#d29922;--blue:#58a6ff;--purple:#bc8cff;
-  --radius:8px;--shadow:0 2px 8px rgba(0,0,0,.4);
-}
-body{font-family:'Segoe UI',system-ui,-apple-system,sans-serif;background:var(--bg);color:var(--text);min-height:100vh;padding:0}
-h1,h2,h3,h4{font-weight:600}
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LlamaSwap Dashboard</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+            color: #e0e0e0;
+            min-height: 100vh;
+            padding: 20px;
+        }
 
-/* ─── Header ─── */
-.header{background:var(--surface);border-bottom:1px solid var(--border);padding:16px 24px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100}
-.header h1{display:flex;align-items:center;gap:10px;font-size:1.4rem}
-.header h1 span.icon{font-size:1.6rem}
-.header .status-badge{padding:6px 14px;border-radius:20px;font-size:.8rem;font-weight:600}
-.status-badge.live{background:rgba(63,185,80,.15);color:var(--green);border:1px solid rgba(63,185,80,.3)}
-.status-badge.offline{background:rgba(248,81,73,.15);color:var(--red);border:1px solid rgba(248,81,73,.3)}
+        .header {
+            text-align: center;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 12px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+        }
 
-/* ─── Layout ─── */
-.main{max-width:1400px;margin:0 auto;padding:24px;display:grid;gap:20px}
+        .header h1 {
+            font-size: 2em;
+            color: white;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+        }
 
-/* ─── Cards ─── */
-.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow);overflow:hidden}
-.card-header{background:rgba(48,54,61,.4);padding:12px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
-.card-header h2{font-size:1rem;display:flex;align-items:center;gap:8px}
-.card-body{padding:16px}
+        .header p {
+            color: rgba(255, 255, 255, 0.9);
+            margin-top: 5px;
+        }
 
-/* ─── Grid layouts ─── */
-.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:20px}
-.grid-3{display:grid;grid-template-columns:repeat(3,1fr);gap:20px}
-.grid-4{display:grid;grid-template-columns:repeat(4,1fr);gap:16px}
-@media(max-width:900px){.grid-2,.grid-3,.grid-4{grid-template-columns:1fr}}
+        .dashboard {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-bottom: 20px;
+        }
 
-/* ─── Model cards ─── */
-.model-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:14px 16px;display:flex;align-items:center;justify-content:space-between;transition:all .2s}
-.model-card:hover{border-color:var(--blue)}
-.model-card.loaded{border-left:3px solid var(--green)}
-.model-card.unloaded{border-left:3px solid var(--text-secondary)}
-.model-name{font-weight:600;font-size:.9rem}
-.model-meta{font-size:.75rem;color:var(--text-secondary);margin-top:4px}
-.status-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0}
-.status-dot.green{background:var(--green);box-shadow:0 0 6px var(--green)}
-.status-dot.red{background:var(--red)}
+        .card {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
+        }
 
-/* ─── GPU Metrics ─── */
-.gpu-stat{text-align:center;padding:16px}
-.gpu-stat .value{font-size:2rem;font-weight:700;line-height:1.2}
-.gpu-stat .label{font-size:.75rem;color:var(--text-secondary);margin-top:4px;text-transform:uppercase;letter-spacing:.5px}
-.gpu-stat .unit{font-size:1rem;color:var(--text-secondary)}
-.gpu-stat.warning .value{color:var(--yellow)}
-.gpu-stat.danger .value{color:var(--red)}
+        .card h2 {
+            color: #667eea;
+            margin-bottom: 15px;
+            font-size: 1.3em;
+            border-bottom: 2px solid #667eea;
+            padding-bottom: 8px;
+        }
 
-/* ─── Progress bar ─── */
-.bar{height:8px;background:var(--border);border-radius:4px;overflow:hidden;margin-top:8px}
-.bar-fill{height:100%;border-radius:4px;transition:width .5s ease}
-.bar-fill.green{background:linear-gradient(90deg,#238636,var(--green))}
-.bar-fill.red{background:linear-gradient(90deg,#da3633,var(--red))}
-.bar-fill.blue{background:linear-gradient(90deg,#1f6feb,var(--blue))}
-.bar-fill.yellow{background:linear-gradient(90deg,#9e6a03,var(--yellow))}
+        .models-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 12px;
+        }
 
-/* ─── Logs ─── */
-.log-container{max-height:300px;overflow-y:auto;font-family:'Cascadia Code','Fira Code',monospace;font-size:.8rem;line-height:1.6}
-.log-entry{padding:4px 8px;border-radius:4px;margin-bottom:2px;display:flex;gap:8px}
-.log-entry:hover{background:rgba(48,54,61,.3)}
-.log-time{color:var(--text-secondary);flex-shrink:0}
-.log-level{font-weight:600;flex-shrink:0;width:50px}
-.log-level.info{color:var(--blue)}
-.log-level.warn{color:var(--yellow)}
-.log-level.error{color:var(--red)}
-.log-level.debug{color:var(--purple)}
-.log-msg{color:var(--text);word-break:break-all}
+        .model-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 8px;
+            border-left: 4px solid #666;
+            transition: all 0.3s ease;
+        }
 
-/* ─── Refresh indicator ─── */
-.refresh-bar{position:fixed;top:0;left:0;height:3px;background:var(--blue);z-index:999;transition:width linear}
-.refresh-bar.animating{width:100%;transition-duration:3s}
+        .model-item.loaded {
+            border-left-color: #00ff88;
+            background: rgba(0, 255, 136, 0.1);
+        }
 
-/* ─── Buttons ─── */
-.btn{padding:8px 16px;border-radius:var(--radius);border:1px solid var(--border);background:var(--surface);color:var(--text);cursor:pointer;font-size:.85rem;display:inline-flex;align-items:center;gap:6px;transition:all .15s}
-.btn:hover{background:var(--border)}
-.btn-primary{background:var(--blue);border-color:var(--blue);color:#fff}
-.btn-primary:hover{background:#79c0ff}
-.btn-danger{background:var(--red);border-color:var(--red);color:#fff}
+        .model-item.unloaded {
+            border-left-color: #ff6b6b;
+            background: rgba(255, 107, 107, 0.05);
+        }
 
-/* ─── Summary row ─── */
-.summary{display:flex;gap:16px;flex-wrap:wrap;margin-bottom:8px}
-.summary-item{padding:8px 14px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);font-size:.85rem}
-.summary-item strong{color:var(--blue)}
+        .model-name {
+            font-weight: 600;
+            font-size: 0.95em;
+        }
 
-/* ─── Scrollbar ─── */
-::-webkit-scrollbar{width:6px}
-::-webkit-scrollbar-track{background:var(--surface)}
-::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px}
-::-webkit-scrollbar-thumb:hover{background:var(--text-secondary)}
+        .model-status {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
 
-/* ─── Loading ─── */
-.loading{text-align:center;padding:40px;color:var(--text-secondary)}
-.loading .spinner{display:inline-block;width:32px;height:32px;border:3px solid var(--border);border-top-color:var(--blue);border-radius:50%;animation:spin .8s linear infinite;margin-bottom:12px}
-@keyframes spin{to{transform:rotate(360deg)}}
+        .status-badge {
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.85em;
+            font-weight: 600;
+        }
 
-/* ─── Empty state ─── */
-.empty{text-align:center;padding:32px;color:var(--text-secondary)}
-.empty .icon{font-size:2.5rem;margin-bottom:8px}
+        .status-badge.loaded {
+            background: #00ff88;
+            color: #000;
+        }
 
-/* ─── Tabs ─── */
-.tabs{display:flex;gap:0;border-bottom:1px solid var(--border);padding:0 16px}
-.tab{padding:10px 16px;cursor:pointer;color:var(--text-secondary);border-bottom:2px solid transparent;transition:all .15s;font-size:.85rem}
-.tab:hover{color:var(--text)}
-.tab.active{color:var(--blue);border-bottom-color:var(--blue)}
-.tab-content{display:none}
-.tab-content.active{display:block}
+        .status-badge.unloaded {
+            background: #ff6b6b;
+            color: #000;
+        }
 
-/* ─── Toggle switch ─── */
-.toggle{display:flex;align-items:center;gap:8px;font-size:.85rem;cursor:pointer}
-.toggle input{accent-color:var(--blue)}
-</style>
+        .model-details {
+            font-size: 0.8em;
+            color: #aaa;
+            margin-top: 4px;
+        }
+
+        /* GPU Monitor */
+        .gpu-info {
+            display: grid;
+            gap: 15px;
+        }
+
+        .gpu-item {
+            padding: 12px;
+            background: rgba(102, 126, 234, 0.2);
+            border-radius: 8px;
+        }
+
+        .gpu-item label {
+            font-size: 0.85em;
+            color: #aaa;
+            display: block;
+        }
+
+        .gpu-item .value {
+            font-size: 1.2em;
+            font-weight: 700;
+            color: #667eea;
+            margin-top: 5px;
+        }
+
+        .gpu-name {
+            color: #00ff88;
+            font-weight: 700;
+            font-size: 1.1em;
+            margin-bottom: 12px;
+        }
+
+        .gpu-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+        }
+
+        .gpu-grid .gpu-item.full-width {
+            grid-column: 1 / -1;
+        }
+
+        /* Progress bar */
+        .progress-bar {
+            width: 100%;
+            height: 8px;
+            background: rgba(255,255,255,0.1);
+            border-radius: 4px;
+            margin-top: 6px;
+            overflow: hidden;
+        }
+
+        .progress-bar .fill {
+            height: 100%;
+            border-radius: 4px;
+            transition: width 0.5s ease;
+        }
+
+        .progress-bar .fill.green { background: #00ff88; }
+        .progress-bar .fill.yellow { background: #ffd700; }
+        .progress-bar .fill.red { background: #ff6b6b; }
+
+        .summary {
+            display: flex;
+            gap: 20px;
+            margin-top: 15px;
+        }
+
+        .summary-item {
+            padding: 15px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 8px;
+            text-align: center;
+            flex: 1;
+        }
+
+        .summary-item .count {
+            font-size: 2em;
+            font-weight: 700;
+        }
+
+        .summary-item .label {
+            font-size: 0.9em;
+            color: #aaa;
+            margin-top: 5px;
+        }
+
+        .logs-section {
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 8px;
+            padding: 15px;
+            max-height: 300px;
+            overflow-y: auto;
+            font-family: 'Consolas', 'Courier New', monospace;
+            font-size: 0.85em;
+        }
+
+        .log-entry {
+            margin: 4px 0;
+            padding: 4px 8px;
+            border-radius: 4px;
+        }
+
+        .log-entry.info {
+            color: #66b3ff;
+        }
+
+        .log-entry.warn {
+            color: #ffd700;
+        }
+
+        .log-entry.error {
+            color: #ff6b6b;
+        }
+
+        .last-update {
+            text-align: center;
+            padding: 10px;
+            color: #aaa;
+            font-size: 0.9em;
+            margin-top: 20px;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 20px;
+            color: #667eea;
+        }
+
+        .spinner {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(102, 126, 234, 0.3);
+            border-radius: 50%;
+            border-top-color: #667eea;
+            animation: spin 1s ease-in-out infinite;
+            margin-right: 10px;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        .loading-text {
+            animation: pulse 1.5s ease-in-out infinite;
+        }
+
+        .error-box {
+            background: rgba(255, 107, 107, 0.2);
+            border: 1px solid #ff6b6b;
+            border-radius: 8px;
+            padding: 15px;
+            margin: 10px 0;
+            color: #ff6b6b;
+            display: none;
+        }
+
+        .loading-success {
+            border-left-color: #00ff88;
+        }
+
+        @media (max-width: 768px) {
+            .dashboard { grid-template-columns: 1fr; }
+            .gpu-grid { grid-template-columns: 1fr; }
+            .summary { flex-direction: column; }
+        }
+    </style>
 </head>
 <body>
-
-<!-- Refresh progress bar -->
-<div class="refresh-bar" id="refreshBar"></div>
-
-<!-- Header -->
-<div class="header">
-  <h1><span class="icon">🦙</span> LlamaSwap Dashboard</h1>
-  <div style="display:flex;align-items:center;gap:12px">
-    <span class="status-badge live" id="connStatus">⏳ Conectando...</span>
-    <span style="font-size:.8rem;color:var(--text-secondary)" id="clock"></span>
-    <button class="btn" onclick="refreshAll()" title="Atualizar agora">🔄</button>
-  </div>
-</div>
-
-<!-- Summary -->
-<div class="main">
-  <div class="grid-4" id="summaryRow">
-    <div class="card" style="text-align:center;padding:12px">
-      <div style="font-size:.75rem;color:var(--text-secondary);text-transform:uppercase;letter-spacing:.5px">Modelos</div>
-      <div style="font-size:1.5rem;font-weight:700;margin-top:4px" id="totalModels">-</div>
+    <div class="header">
+        <h1>🚀 LlamaSwap Dashboard</h1>
+        <p>Monitoramento de Modelos em Tempo Real</p>
     </div>
-    <div class="card" style="text-align:center;padding:12px">
-      <div style="font-size:.75rem;color:var(--text-secondary);text-transform:uppercase;letter-spacing:.5px">Carregados</div>
-      <div style="font-size:1.5rem;font-weight:700;color:var(--green);margin-top:4px" id="loadedModels">-</div>
+
+    <div class="dashboard">
+        <div class="card">
+            <h2>📊 Status dos Modelos</h2>
+            <div id="errorBox" class="error-box"></div>
+            <div class="models-grid" id="modelsGrid">
+                <div class="loading">
+                    <span class="spinner"></span>
+                    <span class="loading-text">Carregando modelos...</span>
+                </div>
+            </div>
+            
+            <div class="summary" id="summary" style="display: none;">
+                <div class="summary-item">
+                    <div class="count" id="readyCount" style="color: #00ff88;">0</div>
+                    <div class="label">CARREGADOS</div>
+                </div>
+                <div class="summary-item">
+                    <div class="count" id="stoppedCount" style="color: #ff6b6b;">0</div>
+                    <div class="label">DESCARREGADOS</div>
+                </div>
+                <div class="summary-item">
+                    <div class="count" id="totalCount" style="color: #667eea;">0</div>
+                    <div class="label">TOTAL</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <h2>🖥️ GPU Monitor</h2>
+            <div id="gpuInfo">
+                <div class="loading">
+                    <span class="spinner"></span>
+                    <span class="loading-text">Carregando GPU...</span>
+                </div>
+            </div>
+        </div>
     </div>
-    <div class="card" style="text-align:center;padding:12px">
-      <div style="font-size:.75rem;color:var(--text-secondary);text-transform:uppercase;letter-spacing:.5px">Descarregados</div>
-      <div style="font-size:1.5rem;font-weight:700;color:var(--red);margin-top:4px" id="unloadedModels">-</div>
+
+    <div class="card" style="margin-bottom: 20px;">
+        <h2>📝 Logs do Serviço</h2>
+        <div class="logs-section" id="logsSection">
+            <div class="loading">
+                <span class="spinner"></span>
+                <span class="loading-text">Carregando logs...</span>
+            </div>
+        </div>
     </div>
-    <div class="card" style="text-align:center;padding:12px">
-      <div style="font-size:.75rem;color:var(--text-secondary);text-transform:uppercase;letter-spacing:.5px">Última atualização</div>
-      <div style="font-size:.9rem;font-weight:600;margin-top:4px" id="lastUpdate">-</div>
+
+    <div class="last-update" id="lastUpdate">
+        Última atualização: --
     </div>
-  </div>
 
-  <!-- GPU Monitor -->
-  <div class="card">
-    <div class="card-header">
-      <h2>🖥️ GPU Monitor</h2>
-      <span style="font-size:.75rem;color:var(--text-secondary)" id="gpuName">-</span>
-    </div>
-    <div class="card-body">
-      <div class="grid-4">
-        <div class="gpu-stat">
-          <div class="value" id="gpuVRAM">-</div>
-          <div class="label">VRAM Usada</div>
-          <div class="bar"><div class="bar-fill blue" id="vramBar" style="width:0%"></div></div>
-        </div>
-        <div class="gpu-stat">
-          <div class="value" id="gpuTemp">-</div>
-          <div class="label">Temperatura</div>
-          <div class="bar"><div class="bar-fill green" id="tempBar" style="width:0%"></div></div>
-        </div>
-        <div class="gpu-stat">
-          <div class="value" id="gpuFan">-</div>
-          <div class="label">Ventoinha</div>
-          <div class="bar"><div class="bar-fill green" id="fanBar" style="width:0%"></div></div>
-        </div>
-        <div class="gpu-stat">
-          <div class="value" id="gpuUtil">-</div>
-          <div class="label">Utilização</div>
-          <div class="bar"><div class="bar-fill blue" id="utilBar" style="width:0%"></div></div>
-        </div>
-      </div>
-      <div class="grid-3" style="margin-top:16px">
-        <div class="gpu-stat">
-          <div class="value" id="gpuPower">-</div>
-          <div class="label">Power Draw</div>
-        </div>
-        <div class="gpu-stat">
-          <div class="value" id="systemRAM">-</div>
-          <div class="label">RAM do Sistema</div>
-          <div class="bar"><div class="bar-fill blue" id="ramBar" style="width:0%"></div></div>
-        </div>
-        <div class="gpu-stat">
-          <div class="value" id="cpuUsage">-</div>
-          <div class="label">CPU Avg</div>
-          <div class="bar"><div class="bar-fill green" id="cpuBar" style="width:0%"></div></div>
-        </div>
-      </div>
-    </div>
-  </div>
+    <script>
+        // Configuração
+        const CONFIG = {
+            baseUrl: 'http://192.168.1.114:8080',
+            apiKey: 'turboquant-api-2026'
+        };
 
-  <!-- Tabs: Models + Logs -->
-  <div>
-    <div class="tabs">
-      <div class="tab active" onclick="switchTab('models')">📋 Modelos</div>
-      <div class="tab" onclick="switchTab('logs')">📝 Logs</div>
-    </div>
-    <div class="tab-content active" id="tab-models">
-      <div class="card" style="margin-top:0">
-        <div class="card-header">
-          <h2>📋 Status dos Modelos</h2>
-          <div style="display:flex;gap:8px">
-            <label class="toggle">
-              <input type="checkbox" id="autoRefresh" checked> Auto-refresh
-            </label>
-          </div>
-        </div>
-        <div class="card-body">
-          <div id="modelsList">
-            <div class="loading"><div class="spinner"></div><br>Carregando modelos...</div>
-          </div>
-        </div>
-      </div>
-    </div>
-    <div class="tab-content" id="tab-logs">
-      <div class="card" style="margin-top:0">
-        <div class="card-header">
-          <h2>📝 Logs do Serviço</h2>
-          <button class="btn" onclick="clearLogs()">🗑️ Limpar</button>
-        </div>
-        <div class="card-body">
-          <div class="log-container" id="logContainer">
-            <div class="empty"><div class="icon">📝</div><div>Aguardando logs...</div></div>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
-</div>
+        // Para rodar localmente com o servidor:
+        //   npm install && npm start
+        //   → http://localhost:8080
 
-<script>
-// ─── Configuration ───
-const CONFIG = {
-  baseUrl: 'http://192.168.1.114:8080',
-  apiKey: 'turboquant-api-2026',
-  refreshInterval: 1000, // ms
-};
-
-const HEADERS = {
-  'Authorization': `Bearer ${CONFIG.apiKey}`,
-  'Content-Type': 'application/json',
-};
-
-// ─── State ───
-let modelsCache = [];
-let gpuCache = {};
-let logEntries = [];
-let connected = false;
-
-// ─── Clock ───
-function updateClock() {
-  const now = new Date();
-  document.getElementById('clock').textContent = now.toLocaleString('pt-BR', {
-    hour: '2-digit', minute: '2-digit', second: '2-digit',
-    day: '2-digit', month: '2-digit', year: 'numeric'
-  });
-  document.getElementById('lastUpdate').textContent = now.toLocaleTimeString('pt-BR', {
-    hour: '2-digit', minute: '2-digit', second: '2-digit'
-  });
-}
-setInterval(updateClock, 1000);
-updateClock();
-
-// ─── Refresh progress bar ───
-function animateRefreshBar() {
-  const bar = document.getElementById('refreshBar');
-  bar.style.transition = 'none';
-  bar.style.width = '0%';
-  requestAnimationFrame(() => {
-    bar.style.transition = `width ${CONFIG.refreshInterval}ms linear`;
-    bar.style.width = '100%';
-  });
-  setTimeout(() => {
-    bar.style.transition = 'none';
-    bar.style.width = '0%';
-  }, CONFIG.refreshInterval);
-}
-
-// ─── Tab switching ───
-function switchTab(tabName) {
-  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-  document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
-  document.querySelector(`.tab:nth-child(${tabName === 'models' ? 1 : 2})`).classList.add('active');
-  document.getElementById(`tab-${tabName}`).classList.add('active');
-}
-
-// ─── API calls ───
-async function fetchJSON(endpoint) {
-  try {
-    const res = await fetch(`${CONFIG.baseUrl}${endpoint}`, { headers: HEADERS });
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    return await res.json();
-  } catch (err) {
-    console.error(`❌ Error fetching ${endpoint}:`, err.message);
-    throw err;
-  }
-}
-
-async function fetchRaw(endpoint) {
-  try {
-    const res = await fetch(`${CONFIG.baseUrl}${endpoint}`, { headers: HEADERS });
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    return await res.text();
-  } catch (err) {
-    console.error(`❌ Error fetching ${endpoint}:`, err.message);
-    throw err;
-  }
-}
-
-// ─── GPU Metrics Parser ───
-function parseMetrics(text) {
-  const metrics = {};
-  const lines = text.split('\n');
-  for (const line of lines) {
-    const m = line.match(/^llamaswap_(\w+)\{(.+?)\}\s+([\d.]+)$/);
-    if (m) {
-      const [, name, labelStr, valueStr] = m;
-      const value = parseFloat(valueStr);
-      // Parse label like 'id="0",name="RTX 3070 Ti",uuid="GPU-xxx"'
-      const labelMatch = {};
-      const parts = labelStr.split(',');
-      for (const part of parts) {
-        const kv = part.trim().split('=');
-        if (kv.length === 2) {
-          labelMatch[kv[0].trim()] = kv[1].trim().replace(/"/g, '');
+        // Função para fazer requisição com Authorization header
+        async function fetchWithAuth(url) {
+            try {
+                const response = await fetch(url, {
+                    headers: {
+                        'Authorization': `Bearer ${CONFIG.apiKey}`
+                    }
+                });
+                if (!response.ok) throw new Error(`HTTP ${response.status}`);
+                const contentType = response.headers.get('content-type') || '';
+                if (contentType.includes('json')) return await response.json();
+                return await response.text();
+            } catch (error) {
+                console.error('Fetch error:', error);
+                throw error;
+            }
         }
-      }
-      // Key: name with first label (id) for unique lookup
-      const labelKey = labelMatch.id !== undefined ? `id${labelMatch.id}` : '';
-      const key = labelKey ? `${name}_${labelKey}` : name;
-      metrics[key] = value;
-      // Also store raw data for GPU info
-      if (name === 'gpu_temperature_celsius') {
-        metrics._gpu_temperature = value;
-        metrics._gpu_name = labelMatch.name || '';
-      }
-      if (name === 'gpu_util_percent') {
-        metrics._gpu_util_percent = value;
-      }
-      if (name === 'gpu_memory_used_bytes') {
-        metrics._gpu_vram_used = value;
-      }
-      if (name === 'gpu_memory_total_bytes') {
-        metrics._gpu_vram_total = value;
-      }
-      if (name === 'gpu_fan_speed_percent') {
-        metrics._gpu_fan = value;
-      }
-      if (name === 'gpu_power_draw_watts') {
-        metrics._gpu_power = value;
-      }
-      if (name === 'gpu_memory_util_percent') {
-        metrics._gpu_vram_percent = value;
-      }
-      if (name === 'cpu_util_percent') {
-        if (!metrics._cpu_values) metrics._cpu_values = [];
-        metrics._cpu_values.push(value);
-      }
-    } else {
-      const simple = line.match(/^llamaswap_(\w+)\s+([\d.]+)$/);
-      if (simple) {
-        const [, name, valueStr] = simple;
-        metrics[name] = parseFloat(valueStr);
-      }
-    }
-  }
-  return metrics;
-}
 
-// ─── Render Models ───
-function renderModels(models) {
-  const container = document.getElementById('modelsList');
-  if (!models || models.length === 0) {
-    container.innerHTML = '<div class="empty"><div class="icon">📋</div><div>Nenhum modelo encontrado</div></div>';
-    return;
-  }
+        // Buscar modelos (polling)
+        async function getModelStatus() {
+            try {
+                const data = await fetchWithAuth(`${CONFIG.baseUrl}/v1/models`);
+                return data.data || [];
+            } catch (error) {
+                console.error('Erro ao buscar modelos:', error);
+                return [];
+            }
+        }
 
-  const loaded = models.filter(m => m.status?.value === 'loaded');
-  const unloaded = models.filter(m => m.status?.value === 'unloaded');
+        // Buscar métricas de GPU (polling)
+        async function getGpuMetrics() {
+            try {
+                const text = await fetchWithAuth(`${CONFIG.baseUrl}/metrics`);
+                return parsePrometheusMetrics(text);
+            } catch (error) {
+                console.error('Erro ao buscar métricas de GPU:', error);
+                return null;
+            }
+        }
 
-  document.getElementById('totalModels').textContent = models.length;
-  document.getElementById('loadedModels').textContent = loaded.length;
-  document.getElementById('unloadedModels').textContent = unloaded.length;
+        // Parsear Prometheus metrics para objeto estruturado
+        function parsePrometheusMetrics(text) {
+            const result = {
+                gpus: [],
+                cpu_util: 0,
+                memory_total: 0,
+                memory_used: 0,
+                memory_free: 0,
+                swap_total: 0,
+                swap_used: 0,
+                load_average: { 1: 0, 5: 0, 15: 0 },
+                gpu_temperature: [],
+                gpu_vram_temperature: [],
+                gpu_util_percent: 0,
+                gpu_memory_util_percent: 0,
+                gpu_memory_used: 0,
+                gpu_memory_total: 0,
+                gpu_fan_speed: 0,
+                gpu_power_draw: 0,
+            };
 
-  let html = '<div style="display:grid;gap:8px">';
+            const lines = text.split('\n').filter(l => l.trim() && !l.startsWith('# TYPE ') && !l.startsWith('# HELP'));
+            for (const line of lines) {
+                if (line.startsWith('#')) continue;
+                
+                // llamaswap_gpu_memory_used_bytes{id="...",name="...",uuid="..."} value
+                const gpuMemUsed = line.match(/llamaswap_gpu_memory_used_bytes\{.*?name="([^"]+)".*?\}\s+([0-9.e+-]+)/);
+                if (gpuMemUsed) {
+                    const gpu = result.gpus.find(g => g.name === gpuMemUsed[1]);
+                    if (gpu) gpu.memory_used = parseFloat(gpuMemUsed[2]);
+                    continue;
+                }
 
-  // Loaded first, then unloaded
-  const sorted = [...loaded, ...unloaded];
-  for (const model of sorted) {
-    const meta = model.meta?.llamaswap || {};
-    const icon = model.status?.value === 'loaded' ? '✅' : '⬜';
-    const cls = model.status?.value === 'loaded' ? 'loaded' : 'unloaded';
+                const gpuMemTotal = line.match(/llamaswap_gpu_memory_total_bytes\{.*?name="([^"]+)".*?\}\s+([0-9.e+-]+)/);
+                if (gpuMemTotal) {
+                    const gpu = result.gpus.find(g => g.name === gpuMemTotal[1]);
+                    if (gpu) gpu.memory_total = parseFloat(gpuMemTotal[2]);
+                    continue;
+                }
 
-    html += `
-      <div class="model-card ${cls}">
-        <div>
-          <div class="model-name">${icon} ${model.name || model.id}</div>
-          <div class="model-meta">ID: ${model.id} ${meta.type ? `• ${meta.type}` : ''}</div>
-        </div>
-        <div class="status-dot ${model.status?.value === 'loaded' ? 'green' : 'red'}"></div>
-      </div>`;
-  }
+                const gpuNameMatch = line.match(/llamaswap_gpu_temperature_celsius\{.*?name="([^"]+)".*?\}\s+([0-9.]+)/);
+                if (gpuNameMatch) {
+                    result.gpus.push({
+                        name: gpuNameMatch[1],
+                        temperature: parseFloat(gpuNameMatch[2])
+                    });
+                    continue;
+                }
 
-  html += '</div>';
-  container.innerHTML = html;
-}
+                const gpuVRamTemp = line.match(/llamaswap_gpu_vram_temperature_celsius\{.*?name="([^"]+)".*?\}\s+([0-9.]+)/);
+                if (gpuVRamTemp) {
+                    const gpu = result.gpus.find(g => g.name === gpuVRamTemp[1]);
+                    if (gpu) gpu.vram_temperature = parseFloat(gpuVRamTemp[2]);
+                    continue;
+                }
 
-// ─── Render GPU Metrics ───
-function renderGPU(m) {
-  if (!m || Object.keys(m).length === 0) return;
+                const gpuUtil = line.match(/llamaswap_gpu_util_percent\{.*?name="([^"]+)".*?\}\s+([0-9.]+)/);
+                if (gpuUtil) {
+                    const gpu = result.gpus.find(g => g.name === gpuUtil[1]);
+                    if (gpu) gpu.util_percent = parseFloat(gpuUtil[2]);
+                    continue;
+                }
 
-  // GPU Name
-  if (m._gpu_name) document.getElementById('gpuName').textContent = m._gpu_name;
+                const gpuMemUtil = line.match(/llamaswap_gpu_memory_util_percent\{.*?name="([^"]+)".*?\}\s+([0-9.]+)/);
+                if (gpuMemUtil) {
+                    const gpu = result.gpus.find(g => g.name === gpuMemUtil[1]);
+                    if (gpu) gpu.memory_util_percent = parseFloat(gpuMemUtil[2]);
+                    continue;
+                }
 
-  // VRAM
-  const vramUsed = m._gpu_vram_used || 0;
-  const vramTotal = m._gpu_vram_total || 1;
-  const vramPct = m._gpu_vram_percent || (vramUsed / vramTotal * 100);
-  document.getElementById('gpuVRAM').innerHTML = `${(vramUsed / 1e9).toFixed(1)}<span class="unit"> / ${vramTotal / 1e9 < 1 ? (vramTotal / 1e9).toFixed(1) : (vramTotal / 1e9).toFixed(0)} GB</span>`;
-  document.getElementById('vramBar').style.width = `${Math.min(100, vramPct)}%`;
+                const gpuFan = line.match(/llamaswap_gpu_fan_speed_percent\{.*?name="([^"]+)".*?\}\s+([0-9.]+)/);
+                if (gpuFan) {
+                    const gpu = result.gpus.find(g => g.name === gpuFan[1]);
+                    if (gpu) gpu.fan_speed = parseFloat(gpuFan[2]);
+                    continue;
+                }
 
-  // Temperature
-  const temp = m._gpu_temperature || 0;
-  document.getElementById('gpuTemp').innerHTML = `${temp}<span class="unit">°C</span>`;
-  document.getElementById('tempBar').style.width = `${Math.min(100, temp / 1.2)}%`;
-  const tempStat = document.getElementById('gpuTemp').parentElement;
-  tempStat.className = `gpu-stat ${temp > 85 ? 'danger' : temp > 70 ? 'warning' : ''}`;
+                const gpuPower = line.match(/llamaswap_gpu_power_draw_watts\{.*?name="([^"]+)".*?\}\s+([0-9.]+)/);
+                if (gpuPower) {
+                    const gpu = result.gpus.find(g => g.name === gpuPower[1]);
+                    if (gpu) gpu.power_draw = parseFloat(gpuPower[2]);
+                    continue;
+                }
 
-  // Fan speed
-  const fan = m._gpu_fan || 0;
-  document.getElementById('gpuFan').innerHTML = `${fan}<span class="unit">%</span>`;
-  document.getElementById('fanBar').style.width = `${fan}%`;
+                const cpuMatch = line.match(/llamaswap_cpu_util_percent\{core="([^"]+)".*?\}\s+([0-9.]+)/);
+                if (cpuMatch && result.cpu_cores !== undefined) {
+                    result.cpu_cores.push({ core: parseInt(cpuMatch[1]), util: parseFloat(cpuMatch[2]) });
+                    continue;
+                }
 
-  // GPU Utilization
-  const util = m._gpu_util_percent || 0;
-  document.getElementById('gpuUtil').innerHTML = `${util}<span class="unit">%</span>`;
-  document.getElementById('utilBar').style.width = `${util}%`;
+                const memTotal = line.match(/llamaswap_memory_total_bytes\s+([0-9.]+)/);
+                if (memTotal) { result.memory_total = parseFloat(memTotal[1]); continue; }
 
-  // Power draw
-  const power = m._gpu_power || 0;
-  document.getElementById('gpuPower').innerHTML = `${power.toFixed(1)}<span class="unit"> W</span>`;
+                const memUsed = line.match(/llamaswap_memory_used_bytes\s+([0-9.]+)/);
+                if (memUsed) { result.memory_used = parseFloat(memUsed[1]); continue; }
 
-  // System RAM (llamaswap_memory_*)
-  const sysRAMUsed = m.memory_used_bytes || 0;
-  const sysRAMTotal = m.memory_total_bytes || 1;
-  const sysPct = (sysRAMUsed / sysRAMTotal * 100).toFixed(1);
-  document.getElementById('systemRAM').innerHTML = `${(sysRAMUsed / 1e9).toFixed(1)}<span class="unit"> / ${sysRAMTotal / 1e9 < 1 ? (sysRAMTotal / 1e9).toFixed(1) : (sysRAMTotal / 1e9).toFixed(0)} GB</span>`;
-  document.getElementById('ramBar').style.width = `${sysPct}%`;
+                const memFree = line.match(/llamaswap_memory_free_bytes\s+([0-9.]+)/);
+                if (memFree) { result.memory_free = parseFloat(memFree[1]); continue; }
 
-  // CPU Average
-  if (m._cpu_values && m._cpu_values.length > 0) {
-    cpuAvg = (m._cpu_values.reduce((a, b) => a + b, 0) / m._cpu_values.length).toFixed(1);
-    document.getElementById('cpuUsage').innerHTML = `${cpuAvg}<span class="unit">%</span>`;
-    document.getElementById('cpuBar').style.width = `${cpuAvg}%`;
-  } else {
-    document.getElementById('cpuUsage').innerHTML = `—<span class="unit">%</span>`;
-    document.getElementById('cpuBar').style.width = `0%`;
-  }
-}
+                const swapTotal = line.match(/llamaswap_swap_total_bytes\s+([0-9.]+)/);
+                if (swapTotal) { result.swap_total = parseFloat(swapTotal[1]); continue; }
 
-// ─── Render Logs ───
-function renderLogs(entries) {
-  const container = document.getElementById('logContainer');
-  if (!entries || entries.length === 0) {
-    container.innerHTML = '<div class="empty"><div class="icon">📝</div><div>Aguardando logs...</div></div>';
-    return;
-  }
+                const swapUsed = line.match(/llamaswap_swap_used_bytes\s+([0-9.]+)/);
+                if (swapUsed) { result.swap_used = parseFloat(swapUsed[1]); continue; }
 
-  const recent = entries.slice(-50);
-  let html = '';
-  for (const entry of recent) {
-    const level = entry.level || 'info';
-    const time = new Date(entry.timestamp || Date.now()).toLocaleTimeString('pt-BR');
-    html += `
-      <div class="log-entry">
-        <span class="log-time">${time}</span>
-        <span class="log-level ${level}">${level.toUpperCase()}</span>
-        <span class="log-msg">${entry.message || entry.text || ''}</span>
-      </div>`;
-  }
-  container.innerHTML = html;
-  container.scrollTop = container.scrollHeight;
-}
+                const loadMatch = line.match(/llamaswap_load_average\{interval="([^"]+)"\}\s+([0-9.]+)/);
+                if (loadMatch) {
+                    result.load_average[loadMatch[1]] = parseFloat(loadMatch[2]);
+                    continue;
+                }
+            }
 
-// ─── Main Refresh ───
-async function refreshAll() {
-  connected = false;
-  document.getElementById('connStatus').className = 'status-badge';
-  document.getElementById('connStatus').textContent = '⏳ Atualizando...';
+            // Calcular média de CPU
+            if (result.cpu_cores && result.cpu_cores.length > 0) {
+                result.cpu_util = Math.round(result.cpu_cores.reduce((a, b) => a + b.util, 0) / result.cpu_cores.length);
+            }
 
-  try {
-    // Fetch models
-    try {
-      const models = await fetchJSON('/v1/models');
-      if (models && models.data) {
-        modelsCache = models.data;
-        renderModels(modelsCache);
-      }
-    } catch (e) {
-      console.warn('Models fetch failed:', e.message);
-      document.getElementById('modelsList').innerHTML = '<div class="empty"><div class="icon">⚠️</div><div>Erro ao carregar modelos</div></div>';
-    }
+            // Calcular médias GPU se múltiplas
+            if (result.gpus.length > 0) {
+                result.gpu_util_percent = Math.round(result.gpus.reduce((a, g) => a + (g.util_percent || 0), 0) / result.gpus.length);
+                result.gpu_memory_util_percent = Math.round(result.gpus.reduce((a, g) => a + (g.memory_util_percent || 0), 0) / result.gpus.length);
+                result.gpu_memory_used = result.gpus.reduce((a, g) => a + (g.memory_used || 0), 0);
+                result.gpu_memory_total = result.gpus.reduce((a, g) => a + (g.memory_total || 0), 0);
+                result.gpu_temperature = result.gpus[0]?.temperature ?? 0;
+                result.gpu_vram_temperature = result.gpus[0]?.vram_temperature ?? 0;
+                result.gpu_fan_speed = result.gpus[0]?.fan_speed ?? 0;
+                result.gpu_power_draw = result.gpus[0]?.power_draw ?? 0;
+            }
 
-    // Fetch GPU metrics
-    try {
-      const metricsRaw = await fetchRaw('/metrics');
-      gpuCache = parseMetrics(metricsRaw);
-      renderGPU(gpuCache);
-    } catch (e) {
-      console.warn('Metrics fetch failed:', e.message);
-    }
+            return result;
+        }
 
-    // Mark connected
-    connected = true;
-    document.getElementById('connStatus').className = 'status-badge live';
-    document.getElementById('connStatus').textContent = '● Conectado';
+        // Buscar logs (polling)
+        async function getLogs() {
+            try {
+                const response = await fetch(`${CONFIG.baseUrl}/logs`, {
+                    headers: {
+                        'Authorization': `Bearer ${CONFIG.apiKey}`
+                    }
+                });
+                if (!response.ok) return '';
+                return await response.text();
+            } catch (error) {
+                console.error('Erro ao buscar logs:', error);
+                return '';
+            }
+        }
 
-  } catch (err) {
-    console.error('Refresh error:', err);
-    document.getElementById('connStatus').className = 'status-badge offline';
-    document.getElementById('connStatus').textContent = '● Desconectado';
-  }
+        function renderModels(models) {
+            const grid = document.getElementById('modelsGrid');
+            const summary = document.getElementById('summary');
+            
+            if (!models || models.length === 0) {
+                grid.innerHTML = '<div class="loading">Nenhum modelo encontrado</div>';
+                return;
+            }
 
-  updateClock();
-}
+            let html = '';
+            let loadedCount = 0;
+            let unloadedCount = 0;
 
-function clearLogs() {
-  document.getElementById('logContainer').innerHTML = '<div class="empty"><div class="icon">📝</div><div>Logs limpos</div></div>';
-}
+            models.forEach(model => {
+                // A API retorna model.status.value === 'loaded' ou 'unloaded'
+                const status = model.status?.value || model.state || 'unloaded';
+                const isLoaded = status === 'loaded';
+                if (isLoaded) loadedCount++;
+                else unloadedCount++;
 
-// ─── Start ───
-refreshAll();
-animateRefreshBar();
+                let details = '';
+                if (isLoaded && model.context_length) {
+                    details = `Context: ${model.context_length} tokens`;
+                }
+                if (model.architecture?.context_window) {
+                    details += (details ? ' | ' : '') + `Max: ${model.architecture.context_window} tokens`;
+                }
+                if (model.capabilities?.function_calling) {
+                    details += (details ? ' | ' : '') + '🔧 Function Calling';
+                }
 
-setInterval(() => {
-  if (document.getElementById('autoRefresh').checked) {
-    refreshAll();
-    animateRefreshBar();
-  }
-}, CONFIG.refreshInterval);
-</script>
+                html += `
+                    <div class="model-item ${status}">
+                        <div>
+                            <div class="model-name">${model.name}</div>
+                            <div class="model-details">${details || 'Não carregado'}</div>
+                        </div>
+                        <div class="model-status">
+                            <span class="status-badge ${status}">${isLoaded ? 'CARREGADO' : 'DESCARREGADO'}</span>
+                        </div>
+                    </div>
+                `;
+            });
+
+            grid.innerHTML = html;
+            summary.style.display = 'flex';
+            document.getElementById('readyCount').textContent = loadedCount;
+            document.getElementById('stoppedCount').textContent = unloadedCount;
+            document.getElementById('totalCount').textContent = models.length;
+        }
+
+        function renderLogs(logs) {
+            const logsSection = document.getElementById('logsSection');
+            
+            if (!logs || logs.length === 0) {
+                logsSection.innerHTML = '<div class="log-entry">Nenhum log disponível</div>';
+                return;
+            }
+
+            const logLines = logs.split('\n').filter(line => line.trim());
+            let html = '';
+
+            logLines.forEach(line => {
+                let className = 'info';
+                if (line.includes('[WARN]')) className = 'warn';
+                if (line.includes('[ERROR]')) className = 'error';
+
+                html += `<div class="log-entry ${className}">${line}</div>`;
+            });
+
+            logsSection.innerHTML = html;
+        }
+
+        function renderGpuMetrics(metrics) {
+            const gpuInfo = document.getElementById('gpuInfo');
+            
+            if (!metrics || metrics.gpus.length === 0) {
+                gpuInfo.innerHTML = '<div class="loading"><span class="spinner"></span><span class="loading-text">Sem dados de GPU</span></div>';
+                return;
+            }
+
+            const gpu = metrics.gpus[0];
+            const gpuName = gpu.name || 'GPU Desconhecida';
+            
+            // Formatar tamanhos
+            function formatBytes(bytes) {
+                if (bytes === 0) return '0 B';
+                const gb = bytes / (1024 * 1024 * 1024);
+                return gb.toFixed(2) + ' GB';
+            }
+
+            function formatMemory(mb) {
+                if (mb === 0) return '0 MB';
+                if (mb > 1024 * 1024 * 1024) {
+                    return (mb / (1024 * 1024 * 1024)).toFixed(2) + ' GB';
+                }
+                return (mb / (1024 * 1024)).toFixed(0) + ' MB';
+            }
+
+            // Cores para barras de progresso
+            function getBarColor(value) {
+                if (value < 70) return 'green';
+                if (value < 90) return 'yellow';
+                return 'red';
+            }
+
+            let html = `<div class="gpu-name">🎮 ${gpuName}</div>`;
+            
+            // VRAM
+            html += `
+                <div class="gpu-grid">
+                    <div class="gpu-item full-width">
+                        <label>VRAM (Memória de Vídeo)</label>
+                        <div class="value">${formatBytes(metrics.gpu_memory_used || 0)} / ${formatBytes(metrics.gpu_memory_total || 0)}</div>
+                        <div class="progress-bar">
+                            <div class="fill ${getBarColor(metrics.gpu_memory_util_percent || 0)}" style="width: ${metrics.gpu_memory_util_percent || 0}%"></div>
+                        </div>
+                        <div style="font-size: 0.8em; color: #aaa; margin-top: 4px;">${(metrics.gpu_memory_util_percent || 0).toFixed(1)}% utilizado</div>
+                    </div>
+                </div>
+            `;
+
+            // Temperatura e Fan
+            html += `
+                <div class="gpu-grid">
+                    <div class="gpu-item">
+                        <label>🌡️ Temperatura</label>
+                        <div class="value">${gpu.temperature ?? '—'}°C</div>
+                    </div>
+                    <div class="gpu-item">
+                        <label>💨 Ventoinha</label>
+                        <div class="value">${gpu.fan_speed ?? '—'}%</div>
+                    </div>
+                </div>
+            `;
+
+            // Power e Utilização
+            html += `
+                <div class="gpu-grid">
+                    <div class="gpu-item">
+                        <label>⚡ Power Draw</label>
+                        <div class="value">${gpu.power_draw != null ? gpu.power_draw.toFixed(1) + 'W' : '—'}</div>
+                    </div>
+                    <div class="gpu-item">
+                        <label>📊 GPU Utilization</label>
+                        <div class="value">${gpu.util_percent ?? '—'}%</div>
+                    </div>
+                </div>
+            `;
+
+            // RAM e CPU
+            html += `
+                <div class="gpu-grid">
+                    <div class="gpu-item">
+                        <label>💾 RAM Total</label>
+                        <div class="value">${formatMemory(metrics.memory_total || 0)}</div>
+                    </div>
+                    <div class="gpu-item">
+                        <label>💾 RAM Usada</label>
+                        <div class="value">${formatMemory(metrics.memory_used || 0)}</div>
+                        <div class="progress-bar">
+                            <div class="fill ${getBarColor((metrics.memory_used / metrics.memory_total * 100) || 0)}" style="width: ${(metrics.memory_used / metrics.memory_total * 100) || 0}%"></div>
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            // CPU cores
+            if (metrics.cpu_cores && metrics.cpu_cores.length > 0) {
+                html += `
+                    <div class="gpu-grid">
+                        <div class="gpu-item">
+                            <label>🖥️ CPU Load</label>
+                            <div class="value">${metrics.cpu_util}% (${metrics.cpu_cores.length} cores)</div>
+                        </div>
+                        <div class="gpu-item">
+                            <label>📈 Load Average</label>
+                            <div class="value" style="font-size: 0.9em;">${metrics.load_average[1]?.toFixed(2) ?? '—'} / ${metrics.load_average[5]?.toFixed(2) ?? '—'} / ${metrics.load_average[15]?.toFixed(2) ?? '—'}</div>
+                        </div>
+                    </div>
+                `;
+            }
+
+            // Swap
+            if (metrics.swap_total > 0) {
+                html += `
+                    <div class="gpu-grid">
+                        <div class="gpu-item">
+                            <label>💿 Swap</label>
+                            <div class="value">${formatMemory(metrics.swap_used || 0)} / ${formatMemory(metrics.swap_total)}</div>
+                        </div>
+                    </div>
+                `;
+            }
+
+            gpuInfo.innerHTML = html;
+        }
+
+        function updateTimestamp() {
+            document.getElementById('lastUpdate').textContent = 
+                `Última atualização: ${new Date().toLocaleString('pt-BR')}`;
+        }
+
+        // Atualização principal
+        async function updateDashboard() {
+            try {
+                // Buscar modelos
+                const models = await getModelStatus();
+                if (models && models.length > 0) {
+                    renderModels(models);
+                }
+                
+                // Buscar métricas de GPU
+                const metrics = await getGpuMetrics();
+                if (metrics && metrics.gpus.length > 0) {
+                    renderGpuMetrics(metrics);
+                } else {
+                    // Tentar mostrar dados parciais mesmo sem GPUs
+                    if (metrics) {
+                        renderGpuMetrics(metrics);
+                    }
+                }
+                
+                // Buscar logs
+                const logs = await getLogs();
+                if (logs) {
+                    renderLogs(logs);
+                }
+                
+                updateTimestamp();
+                hideError();
+                
+            } catch (error) {
+                showError('Erro ao atualizar: ' + error.message);
+                console.error(error);
+            }
+        }
+
+        function showError(message) {
+            const errorBox = document.getElementById('errorBox');
+            errorBox.textContent = message;
+            errorBox.style.display = 'block';
+        }
+
+        function hideError() {
+            document.getElementById('errorBox').style.display = 'none';
+        }
+
+        // Iniciar polling a cada 3 segundos
+        updateDashboard();
+        setInterval(updateDashboard, 1000);
+    </script>
 </body>
 </html>
